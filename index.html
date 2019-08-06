@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Is Anyone On BrowserStack?</title>
+  <link rel="stylesheet" href="style.css">
+  <link id="favicon" rel="icon" type="image/png" href="assets/default.ico" />
+</head>
+
+<!-- Modal for timeout Alerts -->
+<body>
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <p>You have been on BrowserStack for a while!</p>
+      <p>Are you still busy with the account?</p>
+      <button id="modalEndSession">End Session</button>
+      <button id="modalContinueSession">Continue Session</button>
+    </div>
+  </div>
+  <!-- Account Template Replace account_name with name passed in javascript -->
+  <!-- 
+    <div class='tracker'>
+      <div class='browserstack-action-bar'>
+        <h3 id='active-status ACCOUNT_NAME'>Loading...</h3>
+        <h4 id='active-timer ACCOUNT_NAME'></h4>
+        <h6 id='app-instructions ACCOUNT_NAME'>Loading...</h6>
+        <input name='given-name' class='user-name-input' id='user-name ACCOUNT_NAME' placeholder='Enter your name here' disabled>
+        <button class='use-button' id='use-button ACCOUNT_NAME' disabled>Use BrowserStack</button>
+        <button class='stop-button' id='stop-button ACCOUNT_NAME' disabled>Stop Use</button>
+      </div>
+    </div>
+  -->
+  <h2>Change's BrowserStack Tracker</h2>
+  <div id='tracker-wrapper'>
+    <div class='tracker'>
+      <div class='browserstack-action-bar'>
+        <h3 id='active-status qa'>Loading...</h3>
+        <h4 id='active-timer qa'></h4>
+        <h6 id='app-instructions qa'>Loading...</h6>
+        <input name='given-name' class='user-name-input' id='user-name qa' placeholder='Enter your name here' disabled>
+        <button class='use-button' id='use-button qa' disabled>Use BrowserStack</button>
+        <button class='stop-button' id='stop-button qa' disabled>Stop Use</button>
+      </div>
+    </div>
+    <div class='tracker'>
+      <div class='browserstack-action-bar'>
+        <h3 id='active-status dev'>Loading...</h3>
+        <h4 id='active-timer dev'></h4>
+        <h6 id='app-instructions dev'>Loading...</h6>
+        <input name='given-name' class='user-name-input' id='user-name dev' placeholder='Enter your name here' disabled>
+        <button class='use-button' id='use-button dev' disabled>Use BrowserStack</button>
+        <button class='stop-button' id='stop-button dev' disabled>Stop Use</button>
+      </div>
+    </div>
+  </div>
+  <div class='wait-list-wrapper'>
+    <div class='wait-list-actions'>
+      <h3>waitlist!</h3>
+      <h6 id='email-instructions'>Enter your email to be notified when BrowserStack becomes available!</h6>
+      <input name='email' id='user-email' placeholder='Enter your email here'>
+      <select id='account-select'>
+        <option value=''>--Please choose an account--</option>
+        <option value='QA'>QA</option>
+        <option value='Dev'>Dev</option>
+      </select>
+      <button id='add-user-email'>Add</button>
+      <div id='wait-list'></div>
+    </div>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase-database.js"></script>
+  <script type="text/javascript" src="app.js"></script>
+</body>
+
+</html>
