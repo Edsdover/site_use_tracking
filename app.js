@@ -14,14 +14,9 @@ const config = {
   projectId: `browserstackappch`,
   messagingSenderId: `1068441941356`,
   appId: `1:1068441941356:web:f502e11c0892377f`
-
-  apiKey: `AIzaSyAR6ITxJ5W0KPi4khecgpZQV8dFc0tfjjM`,
-  authDomain: `randomtestbed.firebaseapp.com`,
-  databaseURL: `https://randomtestbed.firebaseio.com`,
-  projectId: `randomtestbed`,
-  messagingSenderId: `274147985197`,
-  appId: `1:274147985197:web:7acaff8b54cf0bfc`
 */
+
+// TODO: Write a focus function that will call the DB and check the current accounts to ensure browser is up to date.
 
 firebase.initializeApp(config);
 
@@ -51,26 +46,22 @@ const enterEmailText = `Enter your email to be notified when BrowserStack become
 const enterNameText = `Please enter a name!`;
 const inputDefaultText = `Enter your name to reserve this account!`;
 /* 
-This is where we create new accounts to match the account name in the HTML
-Adding an account is simple and automatic once added to the list below.
-However deleting an account requires the DB accounts table to be dropped as any
-work done to the updateAccounts function will cause firebase to fail.
-This presents a problem as the realtime database detects a change and 
-any open instance of the site that has an older version will readd the old
-account and cause the DB to fail.
-Until fixed it is best to deploy changes that will need a DB drop during 
-off hours. We also need a way to update cached files on update.
+This is where we create new accounts. After making the account in the HTML
+adding and removing accounts is simple and automatic once added to the list below.
 */
 const emailList = {
   qa: `awright@changehealthcare.com`,
   dev: `JuCarter@changehealthcare.com`
 }
+const keysArray = Object.keys(emailList);
+
 // Color declarations
 const errColor = `firebrick`;
 
 // Global variable declarations
 let dbValues;
 let intervalObject = {};
+let resetDBCalled = false;
 let setTimeoutVar;
 let timerStartValue = {};
 let waitList;
@@ -105,7 +96,6 @@ document.onreadystatechange = () => {
   }
 }
 
-
 addEmailButton.addEventListener(`click`, addToWaitList);
 
 /* <<------------------ Init Fires on FB Update ------------------>> */
@@ -115,19 +105,16 @@ function init() {
   db.ref(`accounts`).on(`value`, snap => {
     const accountKeys = Object.keys({ ...snap.val() });
     dbValues = snap.val();
-    if (snap.val()) {
+    if (keysArray.length != accountKeys.length) {
+      // If the local array is different than the DB values, reset the DB values.
+      resetDefaultDBValues();
+    } else if (snap.val()) {
       accountKeys.forEach(function (key) {
         if (dbValues[key].isActive) {
           setActive(key);
         } else {
           setInActive(key);
         }
-      })
-    } else {
-      // If DB is fresh we need to set default values.
-      const keysArray = Object.keys(emailList);
-      keysArray.forEach((key) => {
-        updateAccounts(false, ``, 0, `${key}`);
       })
     }
   });
@@ -145,14 +132,25 @@ function init() {
   });
 }
 
+function resetDefaultDBValues() {
+  // Global var to make sure it is only called once to prevent loop.
+  if (!resetDBCalled) {
+    resetDBCalled = true;
+    db.ref(`accounts`).remove();
+    keysArray.forEach((key) => {
+      updateAccounts(false, ``, 0, key, false);
+    })
+  }
+}
+
 /* <<------------------ User Actions ------------------>> */
 function beginUsingBrowserStack(useButton) {
   const key = useButton.id.split(` `)[1];
   const appInstructions = document.getElementById(`app-instructions ${key}`);
   const userNameInput = document.getElementById(`user-name ${key}`).value;
 
-  // Set the username as a check later for alerts.
   startTime = getSystemTime();
+  // Set the username as a check later for alerts.
   localStorage.setItem(`userName`, userNameInput);
 
   if (userNameInput === ``) {
@@ -160,7 +158,7 @@ function beginUsingBrowserStack(useButton) {
     appInstructions.style.color = `${errColor}`;
   } else {
     appInstructions.style.color = ``;
-    updateAccounts(true, userNameInput, startTime, key);
+    updateAccounts(true, userNameInput, startTime, key, false);
   }
 }
 
@@ -178,7 +176,7 @@ function stopUsingBrowserStack(stopButton, accountKey) {
 
   // Prevents redundant logs, see above comment.
   if (dbValues[key].isActive === true) {
-    updateAccounts(false, ``, 0, key);
+    updateAccounts(false, ``, 0, key, false);
   }
 
   // Decouple user from site, and reset start time.
@@ -264,18 +262,21 @@ function setInActive(key) {
     const useButton = document.getElementById(`use-button ${key}`);
     const userNameInput = document.getElementById(`user-name ${key}`);
 
-    activeDiv.innerHTML = `${key}'s BrowserStack account is available!`;
-    // Sets height to prevent jumping boxes.
-    activeTimer.style.height = ``;
-    activeTimer.innerHTML = ``;
-    appInstructions.innerHTML = `${inputDefaultText}`;
-    stopButton.disabled = true;
-    useButton.disabled = false;
-    userNameInput.disabled = false;
+    // If the HTML does not exist then skip it. 
+    if (activeDiv) {
+      activeDiv.innerHTML = `${key}'s BrowserStack account is available!`;
+      // Sets height to prevent jumping boxes.
+      activeTimer.style.height = ``;
+      activeTimer.innerHTML = ``;
+      appInstructions.innerHTML = `${inputDefaultText}`;
+      stopButton.disabled = true;
+      useButton.disabled = false;
+      userNameInput.disabled = false;
 
-    addEmailAndCopyButton(key);
-    // Clears interval from the active tracker based on unique ID.
-    clearInterval(intervalObject[key]);
+      addEmailAndCopyButton(key);
+      // Clears interval from the active tracker based on unique ID.
+      clearInterval(intervalObject[key]);
+    }
   }
 }
 
@@ -352,41 +353,54 @@ function incrementTimer(key) {
   }
 }
 
+
 function checkTimeAndAlert(seconds, key) {
   // We are using a modal instead of an alert as it is non-blocking and allows timeout of the modal message.
   const storedUser = localStorage.getItem(`userName`);
+  const userValues = dbValues[key];
 
-  // Every 1.5 hours if the user is the same as the active user then we display the Expiration modal.
-  if (seconds % 5400 === 0 && dbValues[key].activeUser === storedUser) { // 5,400 seconds is 1.5 hours.
+  // Every 1.5 hours if the user is the same as the active user and they have not seen the modal then we display the Expiration modal.
+  if (seconds > 5400 && seconds % 5400 < 900 && dbValues[key].activeUser === storedUser && userValues.seenModalBool === false) { // 5,400 seconds is 1.5 hours + within 15 min
+  // if (seconds % 5400 === 0 && dbValues[key].activeUser === storedUser) { // 5,400 seconds is 1.5 hours.
     // Open Modal
     confirmModal.style.display = `block`;
     // Switch to warn favicon
     document.getElementById(`favicon`).href = faviconWarn;
 
+    updateAccounts(true, userValues.activeUser, userValues.startTime, key, true)
+
     // Start a 15 minute timer and change favicon.
     setTimeoutForModalExpiration(key);
 
     modalContinueSession.addEventListener(`click`, () => {
-      setDefaultFaviconCloseModalClearExpiration();
+      setDefaultFaviconCloseModalClearExpirationTimeout();
     });
 
     modalEndSession.addEventListener(`click`, () => {
-      setDefaultFaviconCloseModalClearExpiration();
+      setDefaultFaviconCloseModalClearExpirationTimeout();
       stopUsingBrowserStack(null, key);
     });
+    // if the user is not in a modal window we should reset the seenModalBool to set up the next check.
+  } else if (seconds > 5400 && seconds % 5400 > 900 && userValues.seenModalBool === true) {
+    updateAccounts(true, userValues.activeUser, userValues.startTime, key, false);
   }
 }
 
-function setDefaultFaviconCloseModalClearExpiration() {
+function setDefaultFaviconCloseModalClearExpirationTimeout() {
   document.getElementById(`favicon`).href = faviconDefault;
   confirmModal.style.display = `none`;
   clearTimeout(setTimeoutVar);
 }
 
+// TODO: Move/copy this logic to cloud functions. I think we need to set a reset bool on the account.
+// TODO: If the user does not see the modal or click to extend we need to set the account to inactive.
+// TODO: We could also use the start time in the DB to display how long until auto logout seconds % 5400 +15 min
+// TODO: If we leave the FE logic in place we could use to bool to make sure the modal has been seen or not. 
+// TODO: If the modal has not been seen because JS was paused we can add a check in checkTimeAndAlert to alert and display countdown.
 // If the user makes no selection within 15 minutes the session will be ended for them.
 function setTimeoutForModalExpiration(key) {
   setTimeoutVar = setTimeout(() => {
-    setDefaultFaviconCloseModalClearExpiration();
+    setDefaultFaviconCloseModalClearExpirationTimeout();
     stopUsingBrowserStack(null, key);
   }, 9000000); // 900,000 is 15 minutes.
 }
@@ -483,12 +497,23 @@ function createList(array) {
 }
 
 /* <<------------------ Calls to Firebase ------------------>> */
-function updateAccounts(activeBool, string, number, id) {
+/*
+Any changes made to the updateAccounts function will cause firebase to fail 
+and requires dropping the DB.
+This presents a problem as the DB detects a change on DB drop and any open instance
+of the site that has an older version will trigger their update functions.
+We can force version control on JS but we can't force a refresh.
+
+Until fix is found is best to deploy changes that will need a DB drop during 
+off hours.
+*/
+function updateAccounts(activeBool, string, number, id, seenModal) {
   if (id !== ``) {
     db.ref(`accounts/${id}`).set({
       activeUser: string,
       isActive: activeBool,
-      startTime: number
+      startTime: number,
+      seenModalBool: seenModal
     }, (error) => {
       if (error) {
         console.warn(`error updating FB accounts`);

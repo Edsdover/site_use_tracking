@@ -2,20 +2,21 @@
 <html>
 
 <head>
-  <meta charset="utf-8">
+  <meta charset='utf-8'>
   <title>Is Anyone On BrowserStack?</title>
-  <link rel="stylesheet" href="style.css">
-  <link id="favicon" rel="icon" type="image/png" href="assets/default.ico" />
+  <link rel='stylesheet' href='style.css'>
+  <link id='favicon' rel='icon' type='image/png' href='assets/default.ico' />
 </head>
 
 <!-- Modal for timeout Alerts -->
+
 <body>
-  <div id="confirmModal" class="modal">
-    <div class="modal-content">
+  <div id='confirmModal' class='modal'>
+    <div class='modal-content'>
       <p>You have been on BrowserStack for a while!</p>
       <p>Are you still busy with the account?</p>
-      <button id="modalEndSession">End Session</button>
-      <button id="modalContinueSession">Continue Session</button>
+      <button id='modalEndSession'>End Session</button>
+      <button id='modalContinueSession'>Continue Session</button>
     </div>
   </div>
   <!-- Account Template Replace account_name with name passed in javascript -->
@@ -68,9 +69,21 @@
       <div id='wait-list'></div>
     </div>
   </div>
-  <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase-database.js"></script>
-  <script type="text/javascript" src="app.js"></script>
+  <script src='https://www.gstatic.com/firebasejs/5.5.4/firebase-app.js'></script>
+  <script src='https://www.gstatic.com/firebasejs/5.5.4/firebase-database.js'></script>
+  <!-- Removes caching for js from browser -->
+  <script type='text/javascript'>
+    (function () {
+      const randomNumber = Math.random();
+      const elm = document.getElementsByTagName(`script`)[0];
+      const script = document.createElement(`script`);
+      script.src = `app.js?x=${randomNumber}`;
+      script.type = `text/javascript`;
+      script.async = true;
+      script.defer = true;
+      elm.parentNode.insertBefore(script, elm);
+    })();
+  </script>
 </body>
 
 </html>
