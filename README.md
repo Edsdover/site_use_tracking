@@ -1,7 +1,7 @@
 # BrowerStack Tracker App
 
 ### Purpose:
-To track the use of our Browserstack accounts to assist our team members.
+To track the use of accounts to assist team members.
 
 ### Setup:
 This is a static javascript app that requires no framework or setup. Simply open the index.html in your browser.
